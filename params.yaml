@@ -1,0 +1,12 @@
+scrape:
+  search_pattern: ["chinese%20only%20business%20sign"]
+  output: 
+    search_path: './data/cbc_search_news.txt'
+screen:
+  title_element: 'h1'
+  title_element_name: 'detailHeadline'
+  article_element: 'div'
+  article_element_name: 'story'
+  match_pattern: ["chinese only business sign"]
+  output:
+    screen_path: './data/cbc_screen_news.txt'
