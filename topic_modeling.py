@@ -5,8 +5,12 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.decomposition import LatentDirichletAllocation
 from omegaconf import OmegaConf
 import pandas as pd
+from sentence_transformers import SentenceTransformer
+from bertopic import BERTopic
+from umap import UMAP
+from hdbscan import HDBSCAN
 
-class Topic_modeling():
+class Topic_modeling_LDA():
   def __init__(self, data) -> None:
     self.data = data
     self.nlp = spacy.load('en_core_web_lg')
@@ -43,8 +47,56 @@ def selected_topics(self, model, vectorizer, top_n):
 def preprocess(self):
    self.data['processed'] = self.data['text'].apply(self.spacy_tokenizer)
    return data
+
+class Topic_modeling_BERT():
+  def __init__(self, omegafile) -> None:
+      self.config = omegafile
+  def topic_modeling_processing(self):
+    data = pd.read_csv(self.config.screen.output.screen_path)
+    data['processed'] = data['text'].apply(self.text_preprocess)
+    articles = list(data['processed'])
+    # Get embeddings for all the articles
+    embedding_model = SentenceTransformer('thenlper/gte-small')
+    embeddings = embedding_model.encode(articles, show_progress_bar=True)
+    
+    # We reduce the input embeddings from 384 dimenions to 5 dimenions
+    n_components = self.config.topic_modeling_BERT.umap.n_comp
+    metric = self.config.topic_modeling_BERT.umap.metric
+    umap_model = UMAP(
+    n_components=n_components, min_dist=0.0, metric=metric, random_state=42)
+    reduced_embeddings = umap_model.fit_transform(embeddings)
+    
+    # We fit the model and extract the clusters
+    min_cluster_size = self.config.topic_modeling_BERT.hdscan.min_cluster_size
+    metric = self.config.topic_modeling_BERT.hdscan.metric
+    cluster_selection_method = self.config.topic_modeling_BERT.hdscan.cluster_selection_method
+    hdbscan_model = HDBSCAN(
+        min_cluster_size=min_cluster_size, metric=metric, cluster_selection_method=cluster_selection_method 
+    ).fit(reduced_embeddings)
+
+    # Train our model with our previously defined models
+    topic_model = BERTopic(
+    embedding_model=embedding_model,
+    umap_model=umap_model,
+    hdbscan_model=hdbscan_model,
+    verbose=True
+    ).fit(articles, embeddings)
+
+    return topic_model
+  # Some standard preprocess of text data
+  def text_preprocess(self, sentence):
+    sentence = str(sentence)
+    sentence = sentence.lower()
+    sentence = sentence.replace('chinese-','chinese')
+    sentence = sentence.replace(u'\xa0', ' ')
+    
+    return sentence
+   
 if __name__ == "__main__":
   config = OmegaConf.load('./params.yaml')
   data = pd.read_csv(config.screen.output.screen_path)
-  agent = Topic_modeling(data)
-  agent.get_topic_lda()
+  #agent_LDA = Topic_modeling_LDA(data)
+  #agent_LDA.get_topic_lda()
+  agent_BERT = Topic_modeling_BERT(config)  
+  topic_model = agent_BERT.topic_modeling_processing()
+  topic_model.get_topic_info()
