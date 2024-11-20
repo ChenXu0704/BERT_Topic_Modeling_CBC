@@ -9,4 +9,4 @@ screen:
   article_element_name: 'story'
   match_pattern: ["chinese only business sign"]
   output:
-    screen_path: './data/cbc_screen_news.txt'
+    screen_path: './data/cbc_screen_news.csv'
