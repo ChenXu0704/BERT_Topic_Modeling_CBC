@@ -95,8 +95,10 @@ class Topic_modeling_BERT():
 if __name__ == "__main__":
   config = OmegaConf.load('./params.yaml')
   data = pd.read_csv(config.screen.output.screen_path)
-  #agent_LDA = Topic_modeling_LDA(data)
-  #agent_LDA.get_topic_lda()
-  agent_BERT = Topic_modeling_BERT(config)  
-  topic_model = agent_BERT.topic_modeling_processing()
-  topic_model.get_topic_info()
+  if config.topic_modeling_LDA.activate:
+    agent_LDA = Topic_modeling_LDA(data)
+    agent_LDA.get_topic_lda()
+  if config.topic_modeling_BERT.activate:
+    agent_BERT = Topic_modeling_BERT(config)  
+    topic_model = agent_BERT.topic_modeling_processing()
+    topic_model.get_topic_info()

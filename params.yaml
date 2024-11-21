@@ -10,7 +10,10 @@ screen:
   match_pattern: ["chinese only business sign"]
   output:
     screen_path: './data/cbc_screen_news.csv'
+topic_modeling_LDA:
+  activate: False
 topic_modeling_BERT:
+  activate: True
   umap: 
     metric: 'cosine'
     n_comp: 5
